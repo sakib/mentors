@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="intro">
+  <div class="intro-body">
+{% if error %}
+<h2><div class="alert" role="alert">
+  {{ error }}
+</div></h2>
+{% endif %}
+
+{% if name %}
+<h4><p> thanks for signing up as a mentor, {{ name }}! :) </p></h4>
+{% endif %}
+
+    <div class="container">
+      <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+
+            <form action="{{ url_for('addmentors') }}" method="post">
+              <p><h4>enter mentor name:</h4></p>
+              <input type="text" class="form-control" name="name"></input>
+              <br><br>
+              <p><h4>enter mentor email:</h4></p>
+              <input type="text" class="form-control" name="email"></input>
+              <br><br><br>
+              <button type=button" class="btn btn-lg btn-default">become a mentor!</button>
+            </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+{% endblock %}
