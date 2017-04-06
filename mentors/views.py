@@ -14,7 +14,8 @@ pp = pprint.PrettyPrinter(indent=4)
 @app.route('/')
 def index():
     # display mentors and allow searches by skill
-    return render_template('index.html')
+    mentors = Mentor.query.all()
+    return render_template('index.html', mentors=mentors)
 
 
 # API endpoint
@@ -42,9 +43,34 @@ def addmentors():
     if request.method == 'POST':
         name = request.form.get('name')
         email = request.form.get('email')
-        mentor = Mentor(name=name, email=email)
+        bio = request.form.get('bio')
+        mentor = Mentor(name=name, email=email, bio=bio)
+
+        skills = []
+        all_skills = map(lambda x: x.name, Skill.query.all())
+        skill_string = request.form.get('skills')
+        skill_list = [x.strip() for x in skill_string.split(',')]
+        for skill in skill_list:
+            if name not in all_skills: # avoid duplicate skills
+                skills.append(Skill(name=skill))
+
+        # add mentor to mentor table
         db.session.add(mentor)
         db.session.commit()
+
+        # add new skills to skill table
+        for skill in skills:
+            db.session.add(skill)
+            db.session.commit()
+
+        # add all skills to mapping between mentors and skills table
+        for skill in skill_list: # just names
+            skill_obj = Skill.query.filter_by(name=skill).first()
+            mapping = MentorSkills(mentor_id=mentor.id, skill_id=skill_obj.id)
+            db.session.add(mapping)
+
+        db.session.commit()
+
         print name, email, " just signed up as a mentor!"
         return render_template('index.html', name=name)
 
@@ -60,6 +86,16 @@ def unhandled_exception(e):
 
 
 def get_mentor_json(mentor):
+    mappings = MentorSkills.query.filter_by(mentor_id=mentor.id).all()
+    skills = map(lambda x: Skill.query.filter_by(id=x.skill_id), mappings)
+    skills_json = map(get_skill_json, skills)
+
     return {'id': mentor.id,
             'name': mentor.name,
-            'email': mentor.email}
+            'email': mentor.email,
+            'skills': skills_json}
+
+
+def get_skill_json(skill):
+    return {'id': skill.id,
+            'name': skill.name}
